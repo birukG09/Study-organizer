@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block title %}Library - Student PDF Hub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>
+                <i class="fas fa-books me-2 text-primary"></i>
+                My Library
+            </h1>
+            <p class="text-muted">Manage your collection of PDFs and study materials</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('upload_file') }}" class="btn btn-primary">
+                    <i class="fas fa-upload me-1"></i>Upload
+                </a>
+                <a href="{{ url_for('convert_url') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-globe me-1"></i>Convert
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-6">
+                            <label for="search" class="form-label">
+                                <i class="fas fa-search me-1"></i>Search Documents
+                            </label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ search_query }}" placeholder="Search by title...">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="status" class="form-label">
+                                <i class="fas fa-filter me-1"></i>Filter by Status
+                            </label>
+                            <select class="form-control" id="status" name="status">
+                                <option value="">All Documents</option>
+                                <option value="to_read" {% if current_status == 'to_read' %}selected{% endif %}>
+                                    📘 To Read
+                                </option>
+                                <option value="in_progress" {% if current_status == 'in_progress' %}selected{% endif %}>
+                                    📖 In Progress
+                                </option>
+                                <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>
+                                    ✅ Completed
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-outline-primary">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documents Grid -->
+    {% if documents %}
+    <div class="row">
+        {% for doc in documents %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 document-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="card-title mb-0 flex-grow-1">
+                            <i class="fas fa-file-pdf text-danger me-2"></i>
+                            {{ doc.title }}
+                        </h6>
+                        <div class="dropdown">
+                            <button class="btn btn-link btn-sm text-muted" type="button" 
+                                    data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('view_pdf', filename=doc.filename) }}">
+                                        <i class="fas fa-eye me-2"></i>View
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('download_file', filename=doc.filename) }}">
+                                        <i class="fas fa-download me-2"></i>Download
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <button class="dropdown-item text-danger" onclick="confirmDelete({{ doc.id }}, '{{ doc.title }}')">
+                                        <i class="fas fa-trash me-2"></i>Delete
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <span class="badge {{ doc.get_status_class() }}">
+                            {{ doc.get_status_display() }}
+                        </span>
+                        {% if doc.source_url %}
+                        <span class="badge bg-secondary ms-1">
+                            <i class="fas fa-globe me-1"></i>Web
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {% if doc.description %}
+                    <p class="card-text text-muted small">
+                        {{ doc.description[:100] }}{% if doc.description|length > 100 %}...{% endif %}
+                    </p>
+                    {% endif %}
+
+                    <div class="small text-muted mb-3">
+                        <div><i class="fas fa-calendar me-1"></i>{{ doc.upload_date.strftime('%B %d, %Y') }}</div>
+                        <div><i class="fas fa-hdd me-1"></i>{{ "%.1f"|format(doc.file_size / 1024 / 1024) }} MB</div>
+                        {% if doc.view_count > 0 %}
+                        <div><i class="fas fa-eye me-1"></i>{{ doc.view_count }} views</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Status Update Form -->
+                    <form method="POST" action="{{ url_for('update_status', doc_id=doc.id) }}" class="mb-2">
+                        <div class="row g-2">
+                            <div class="col-8">
+                                <select name="status" class="form-control form-control-sm">
+                                    <option value="to_read" {% if doc.status.value == 'to_read' %}selected{% endif %}>
+                                        📘 To Read
+                                    </option>
+                                    <option value="in_progress" {% if doc.status.value == 'in_progress' %}selected{% endif %}>
+                                        📖 In Progress
+                                    </option>
+                                    <option value="completed" {% if doc.status.value == 'completed' %}selected{% endif %}>
+                                        ✅ Completed
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-4">
+                                <button type="submit" class="btn btn-outline-secondary btn-sm w-100">
+                                    <i class="fas fa-save"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2 d-md-flex">
+                        <a href="{{ url_for('view_pdf', filename=doc.filename) }}" 
+                           class="btn btn-primary btn-sm flex-fill">
+                            <i class="fas fa-eye me-1"></i>View
+                        </a>
+                        <button class="btn btn-outline-secondary btn-sm" 
+                                onclick="copyShareUrl('{{ url_for('view_pdf', filename=doc.filename, _external=True) }}')">
+                            <i class="fas fa-share"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="row">
+        <div class="col-lg-6 mx-auto text-center">
+            <div class="card">
+                <div class="card-body py-5">
+                    {% if search_query or current_status %}
+                    <i class="fas fa-search fa-4x text-muted mb-3"></i>
+                    <h3>No Documents Found</h3>
+                    <p class="text-muted">
+                        No documents match your current search criteria.
+                        {% if search_query %}Try a different search term{% endif %}
+                        {% if search_query and current_status %} or {% endif %}
+                        {% if current_status %}change the status filter{% endif %}.
+                    </p>
+                    <a href="{{ url_for('library') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-times me-1"></i>Clear Filters
+                    </a>
+                    {% else %}
+                    <i class="fas fa-book-open fa-4x text-muted mb-3"></i>
+                    <h3>Your Library is Empty</h3>
+                    <p class="text-muted">Start building your digital library by uploading files or converting web pages to PDF.</p>
+                    <div class="mt-3">
+                        <a href="{{ url_for('upload_file') }}" class="btn btn-primary me-2">
+                            <i class="fas fa-upload me-1"></i>Upload Files
+                        </a>
+                        <a href="{{ url_for('convert_url') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-globe me-1"></i>Convert Web Page
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                    Confirm Delete
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="deleteDocTitle"></strong>?</p>
+                <p class="text-muted">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" id="deleteForm" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function confirmDelete(docId, docTitle) {
+    document.getElementById('deleteDocTitle').textContent = docTitle;
+    document.getElementById('deleteForm').action = '/delete/' + docId;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+function copyShareUrl(url) {
+    navigator.clipboard.writeText(url).then(function() {
+        const btn = event.target.closest('a');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check text-success me-2"></i>Copied!';
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+        }, 2000);
+    }).catch(function() {
+        const textArea = document.createElement('textarea');
+        textArea.value = url;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        const btn = event.target.closest('a');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check text-success me-2"></i>Copied!';
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+        }, 2000);
+    });
+}
+
+function shareToTelegram(url, title) {
+    const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title + ' - via BITS HUB')}`;
+    window.open(telegramUrl, '_blank');
+}
+
+function shareToTwitter(url, title) {
+    const twitterUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title + ' - via BITS HUB')}`;
+    window.open(twitterUrl, '_blank');
+}
+
+function shareToLinkedIn(url, title) {
+    const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+    window.open(linkedinUrl, '_blank');
+}
+</script>
+{% endblock %}

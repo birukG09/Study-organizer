@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Files - Student PDF Hub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">
+                        <i class="fas fa-upload me-2 text-primary"></i>
+                        Upload PDF or EPUB Files
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                        <div class="mb-4">
+                            <label for="file" class="form-label">
+                                <i class="fas fa-file me-1"></i>Select File
+                            </label>
+                            <input type="file" class="form-control" id="file" name="file" 
+                                   accept=".pdf,.epub" required>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Supported formats: PDF, EPUB (max 50MB)
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="title" class="form-label">
+                                <i class="fas fa-heading me-1"></i>Title (Optional)
+                            </label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   placeholder="Enter a custom title or leave blank to use filename">
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="description" class="form-label">
+                                <i class="fas fa-align-left me-1"></i>Description (Optional)
+                            </label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="3" placeholder="Add a description for this document"></textarea>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary" id="uploadBtn">
+                                <i class="fas fa-upload me-2"></i>Upload File
+                            </button>
+                            <a href="{{ url_for('library') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Library
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Info Section -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-info-circle text-info me-2"></i>
+                        File Upload Information
+                    </h5>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>PDF files:</strong> Will be stored as-is and can be viewed immediately
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>EPUB files:</strong> Will be automatically converted to PDF format
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Progress tracking:</strong> Mark documents as "To Read", "In Progress", or "Completed"
+                        </li>
+                        <li>
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Sharing:</strong> Each document gets a unique shareable URL
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    const btn = document.getElementById('uploadBtn');
+    const fileInput = document.getElementById('file');
+    
+    if (!fileInput.files.length) {
+        e.preventDefault();
+        alert('Please select a file to upload.');
+        return;
+    }
+    
+    // Check file size (50MB limit)
+    const file = fileInput.files[0];
+    const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+    
+    if (file.size > maxSize) {
+        e.preventDefault();
+        alert('File size exceeds 50MB limit. Please choose a smaller file.');
+        return;
+    }
+    
+    // Show loading state
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Uploading...';
+    btn.disabled = true;
+});
+
+// File input change handler
+document.getElementById('file').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const titleInput = document.getElementById('title');
+    
+    if (file && !titleInput.value) {
+        // Auto-populate title with filename (without extension)
+        const filename = file.name.replace(/\.[^/.]+$/, "");
+        titleInput.value = filename;
+    }
+});
+</script>
+{% endblock %}

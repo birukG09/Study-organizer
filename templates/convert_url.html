@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Convert Web Page - Student PDF Hub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">
+                        <i class="fas fa-globe me-2 text-success"></i>
+                        Convert Web Page to PDF
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="convertForm">
+                        <div class="mb-4">
+                            <label for="url" class="form-label">
+                                <i class="fas fa-link me-1"></i>Website URL
+                            </label>
+                            <input type="url" class="form-control" id="url" name="url" 
+                                   placeholder="https://example.com" required>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Enter the complete URL including http:// or https://
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="title" class="form-label">
+                                <i class="fas fa-heading me-1"></i>Title (Optional)
+                            </label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   placeholder="Enter a custom title or leave blank to auto-generate">
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="description" class="form-label">
+                                <i class="fas fa-align-left me-1"></i>Description (Optional)
+                            </label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="3" placeholder="Add a description for this converted document"></textarea>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success" id="convertBtn">
+                                <i class="fas fa-magic me-2"></i>Convert to PDF
+                            </button>
+                            <a href="{{ url_for('library') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Library
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Info Section -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-info-circle text-info me-2"></i>
+                        Web to PDF Conversion
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-success">
+                                <i class="fas fa-check me-1"></i>What Works Well
+                            </h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-circle fa-xs text-success me-2"></i>News articles</li>
+                                <li><i class="fas fa-circle fa-xs text-success me-2"></i>Blog posts</li>
+                                <li><i class="fas fa-circle fa-xs text-success me-2"></i>Documentation</li>
+                                <li><i class="fas fa-circle fa-xs text-success me-2"></i>Research papers</li>
+                                <li><i class="fas fa-circle fa-xs text-success me-2"></i>Educational content</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-warning">
+                                <i class="fas fa-exclamation-triangle me-1"></i>Limitations
+                            </h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-circle fa-xs text-warning me-2"></i>Interactive content may not render</li>
+                                <li><i class="fas fa-circle fa-xs text-warning me-2"></i>Some JavaScript elements may be missing</li>
+                                <li><i class="fas fa-circle fa-xs text-warning me-2"></i>Complex layouts may look different</li>
+                                <li><i class="fas fa-circle fa-xs text-warning me-2"></i>Videos and animations are not included</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Examples Section -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-lightbulb text-warning me-2"></i>
+                        Example URLs to Try
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="example-url" data-url="https://en.wikipedia.org/wiki/Machine_learning">
+                                <strong>Wikipedia - Machine Learning</strong>
+                                <br>
+                                <small class="text-muted">https://en.wikipedia.org/wiki/Machine_learning</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="example-url" data-url="https://developer.mozilla.org/en-US/docs/Web/JavaScript">
+                                <strong>MDN - JavaScript Guide</strong>
+                                <br>
+                                <small class="text-muted">https://developer.mozilla.org/en-US/docs/Web/JavaScript</small>
+                            </div>
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        <i class="fas fa-mouse-pointer me-1"></i>
+                        Click on any example to populate the URL field
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('convertForm').addEventListener('submit', function(e) {
+    const btn = document.getElementById('convertBtn');
+    const urlInput = document.getElementById('url');
+    
+    if (!urlInput.value.trim()) {
+        e.preventDefault();
+        alert('Please enter a valid URL.');
+        return;
+    }
+    
+    // Show loading state
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Converting...';
+    btn.disabled = true;
+});
+
+// Example URL click handlers
+document.querySelectorAll('.example-url').forEach(function(element) {
+    element.style.cursor = 'pointer';
+    element.addEventListener('click', function() {
+        const url = this.getAttribute('data-url');
+        document.getElementById('url').value = url;
+        
+        // Auto-generate title from URL
+        const titleInput = document.getElementById('title');
+        if (!titleInput.value) {
+            const urlParts = url.split('/');
+            let title = urlParts[urlParts.length - 1] || urlParts[urlParts.length - 2] || 'Web Page';
+            title = title.replace(/[-_]/g, ' ').replace(/\.[^/.]+$/, '');
+            titleInput.value = title.charAt(0).toUpperCase() + title.slice(1);
+        }
+    });
+});
+
+// URL input change handler for auto-title generation
+document.getElementById('url').addEventListener('blur', function() {
+    const urlInput = this;
+    const titleInput = document.getElementById('title');
+    
+    if (urlInput.value && !titleInput.value) {
+        try {
+            const url = new URL(urlInput.value);
+            let title = url.pathname.split('/').pop() || url.hostname;
+            title = title.replace(/[-_]/g, ' ').replace(/\.[^/.]+$/, '');
+            if (title) {
+                titleInput.value = title.charAt(0).toUpperCase() + title.slice(1);
+            }
+        } catch (e) {
+            // Invalid URL, ignore
+        }
+    }
+});
+</script>
+{% endblock %}

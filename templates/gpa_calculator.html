@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block title %}GPA Calculator - BITS HUB{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-lg-8 mx-auto text-center">
+            <h1 class="hero-title">
+                <i class="fas fa-calculator text-success me-3"></i>
+                GPA Calculator
+            </h1>
+            <p class="hero-description">
+                Calculate your Grade Point Average with precision. Add your courses, credit hours, and grades to get your cumulative GPA.
+            </p>
+        </div>
+    </div>
+
+    <!-- GPA Calculator Card -->
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">
+                        <i class="fas fa-graduation-cap me-2 text-success"></i>
+                        Course Grade Calculator
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <!-- Course Entry Form -->
+                    <div id="courses-container">
+                        <div class="course-row mb-3" data-course="0">
+                            <div class="row g-3">
+                                <div class="col-md-5">
+                                    <label class="form-label">Course Name</label>
+                                    <input type="text" class="form-control course-name" placeholder="e.g., Mathematics 101">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Credit Hours</label>
+                                    <input type="number" class="form-control credit-hours" min="1" max="6" step="0.5" placeholder="3">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Grade</label>
+                                    <select class="form-control grade-select">
+                                        <option value="">Select Grade</option>
+                                        <option value="A+">A+ (4.0)</option>
+                                        <option value="A">A (4.0)</option>
+                                        <option value="A-">A- (3.7)</option>
+                                        <option value="B+">B+ (3.3)</option>
+                                        <option value="B">B (3.0)</option>
+                                        <option value="B-">B- (2.7)</option>
+                                        <option value="C+">C+ (2.3)</option>
+                                        <option value="C">C (2.0)</option>
+                                        <option value="C-">C- (1.7)</option>
+                                        <option value="D+">D+ (1.3)</option>
+                                        <option value="D">D (1.0)</option>
+                                        <option value="F">F (0.0)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-1">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button type="button" class="btn btn-outline-danger remove-course" style="display: none;">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add Course Button -->
+                    <div class="mb-4">
+                        <button type="button" class="btn btn-outline-primary" id="add-course">
+                            <i class="fas fa-plus me-2"></i>Add Another Course
+                        </button>
+                    </div>
+
+                    <!-- Calculate Button -->
+                    <div class="d-grid gap-2 mb-4">
+                        <button type="button" class="btn btn-primary btn-lg" id="calculate-gpa">
+                            <i class="fas fa-calculator me-2"></i>Calculate GPA
+                        </button>
+                    </div>
+
+                    <!-- Results Section -->
+                    <div id="gpa-results" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="stats-card text-center">
+                                    <div class="stats-icon">
+                                        <i class="fas fa-award"></i>
+                                    </div>
+                                    <div class="stats-number" id="final-gpa">0.00</div>
+                                    <div class="text-muted">Cumulative GPA</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stats-card text-center">
+                                    <div class="stats-icon">
+                                        <i class="fas fa-clock"></i>
+                                    </div>
+                                    <div class="stats-number" id="total-credits">0</div>
+                                    <div class="text-muted">Total Credit Hours</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stats-card text-center">
+                                    <div class="stats-icon">
+                                        <i class="fas fa-books"></i>
+                                    </div>
+                                    <div class="stats-number" id="total-courses">0</div>
+                                    <div class="text-muted">Courses</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- GPA Scale Reference -->
+                        <div class="mt-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-info-circle me-2"></i>GPA Performance Scale
+                                    </h6>
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <span class="badge bg-success">3.5 - 4.0</span> Excellent
+                                        </div>
+                                        <div class="col-md-3">
+                                            <span class="badge bg-info">3.0 - 3.49</span> Good
+                                        </div>
+                                        <div class="col-md-3">
+                                            <span class="badge bg-warning">2.5 - 2.99</span> Average
+                                        </div>
+                                        <div class="col-md-3">
+                                            <span class="badge bg-danger">Below 2.5</span> Needs Improvement
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let courseCount = 1;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Add course functionality
+    document.getElementById('add-course').addEventListener('click', addCourse);
+    
+    // Calculate GPA functionality
+    document.getElementById('calculate-gpa').addEventListener('click', calculateGPA);
+    
+    // Initial setup
+    updateRemoveButtons();
+});
+
+function addCourse() {
+    const container = document.getElementById('courses-container');
+    const newRow = document.createElement('div');
+    newRow.className = 'course-row mb-3 fade-in';
+    newRow.setAttribute('data-course', courseCount);
+    
+    newRow.innerHTML = `
+        <div class="row g-3">
+            <div class="col-md-5">
+                <label class="form-label">Course Name</label>
+                <input type="text" class="form-control course-name" placeholder="e.g., Physics 201">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Credit Hours</label>
+                <input type="number" class="form-control credit-hours" min="1" max="6" step="0.5" placeholder="3">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Grade</label>
+                <select class="form-control grade-select">
+                    <option value="">Select Grade</option>
+                    <option value="A+">A+ (4.0)</option>
+                    <option value="A">A (4.0)</option>
+                    <option value="A-">A- (3.7)</option>
+                    <option value="B+">B+ (3.3)</option>
+                    <option value="B">B (3.0)</option>
+                    <option value="B-">B- (2.7)</option>
+                    <option value="C+">C+ (2.3)</option>
+                    <option value="C">C (2.0)</option>
+                    <option value="C-">C- (1.7)</option>
+                    <option value="D+">D+ (1.3)</option>
+                    <option value="D">D (1.0)</option>
+                    <option value="F">F (0.0)</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">&nbsp;</label>
+                <button type="button" class="btn btn-outline-danger remove-course" onclick="removeCourse(${courseCount})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(newRow);
+    courseCount++;
+    updateRemoveButtons();
+    
+    // Add animation
+    setTimeout(() => {
+        newRow.style.opacity = '1';
+        newRow.style.transform = 'translateY(0)';
+    }, 10);
+}
+
+function removeCourse(courseId) {
+    const courseRow = document.querySelector(`[data-course="${courseId}"]`);
+    if (courseRow) {
+        courseRow.style.opacity = '0';
+        courseRow.style.transform = 'translateY(-20px)';
+        setTimeout(() => {
+            courseRow.remove();
+            updateRemoveButtons();
+        }, 300);
+    }
+}
+
+function updateRemoveButtons() {
+    const courseRows = document.querySelectorAll('.course-row');
+    courseRows.forEach((row, index) => {
+        const removeBtn = row.querySelector('.remove-course');
+        if (courseRows.length > 1) {
+            removeBtn.style.display = 'block';
+        } else {
+            removeBtn.style.display = 'none';
+        }
+    });
+}
+
+function calculateGPA() {
+    const courseRows = document.querySelectorAll('.course-row');
+    const courses = [];
+    
+    let hasValidCourse = false;
+    
+    courseRows.forEach(row => {
+        const courseName = row.querySelector('.course-name').value;
+        const creditHours = parseFloat(row.querySelector('.credit-hours').value);
+        const grade = row.querySelector('.grade-select').value;
+        
+        if (creditHours && grade) {
+            courses.push({
+                course_name: courseName,
+                credit_hours: creditHours,
+                grade: grade
+            });
+            hasValidCourse = true;
+        }
+    });
+    
+    if (!hasValidCourse) {
+        alert('Please enter at least one course with credit hours and grade.');
+        return;
+    }
+    
+    // Show loading state
+    const calculateBtn = document.getElementById('calculate-gpa');
+    const originalText = calculateBtn.innerHTML;
+    calculateBtn.innerHTML = '<div class="loading-spinner me-2"></div>Calculating...';
+    calculateBtn.disabled = true;
+    
+    // Send data to backend
+    fetch('/calculate-gpa', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({courses: courses})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            // Display results
+            document.getElementById('final-gpa').textContent = data.gpa.toFixed(2);
+            document.getElementById('total-credits').textContent = data.total_credit_hours;
+            document.getElementById('total-courses').textContent = data.total_courses;
+            
+            // Show results section with animation
+            const resultsSection = document.getElementById('gpa-results');
+            resultsSection.style.display = 'block';
+            resultsSection.classList.add('fade-in');
+            
+            // Scroll to results
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while calculating GPA. Please try again.');
+    })
+    .finally(() => {
+        // Restore button
+        calculateBtn.innerHTML = originalText;
+        calculateBtn.disabled = false;
+    });
+}
+</script>
+
+<style>
+.course-row {
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 0.3s ease;
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.stats-card {
+    transition: transform 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+}
+</style>
+{% endblock %}

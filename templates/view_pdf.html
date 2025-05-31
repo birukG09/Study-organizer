@@ -1,0 +1,371 @@
+{% extends "base.html" %}
+
+{% block title %}{{ document.title }} - Student PDF Hub{% endblock %}
+
+{% block extra_head %}
+<!-- PDF.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Document Header -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h4 class="mb-1">
+                                <i class="fas fa-file-pdf text-danger me-2"></i>
+                                {{ document.title }}
+                            </h4>
+                            <div class="text-muted">
+                                <small>
+                                    <i class="fas fa-calendar me-1"></i>
+                                    Added {{ document.upload_date.strftime('%B %d, %Y') }}
+                                    
+                                    <i class="fas fa-hdd me-1 ms-3"></i>
+                                    {{ "%.1f"|format(document.file_size / 1024 / 1024) }} MB
+                                    
+                                    {% if document.view_count > 1 %}
+                                    <i class="fas fa-eye me-1 ms-3"></i>
+                                    {{ document.view_count }} views
+                                    {% endif %}
+                                </small>
+                            </div>
+                            {% if document.description %}
+                            <p class="mt-2 mb-0 text-muted">{{ document.description }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <div class="btn-group mb-2" role="group">
+                                <a href="{{ url_for('download_file', filename=document.filename) }}" 
+                                   class="btn btn-outline-primary">
+                                    <i class="fas fa-download me-1"></i>Download
+                                </a>
+                                <div class="btn-group">
+                                    <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                        <i class="fas fa-share me-1"></i>Share
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="shareToTelegram('{{ url_for('view_pdf', filename=document.filename, _external=True) }}', '{{ document.title }}')">
+                                            <i class="fab fa-telegram me-2"></i>Telegram
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="shareToTwitter('{{ url_for('view_pdf', filename=document.filename, _external=True) }}', '{{ document.title }}')">
+                                            <i class="fab fa-twitter me-2"></i>Twitter/X
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="shareToLinkedIn('{{ url_for('view_pdf', filename=document.filename, _external=True) }}', '{{ document.title }}')">
+                                            <i class="fab fa-linkedin me-2"></i>LinkedIn
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="#" onclick="copyShareUrl('{{ url_for('view_pdf', filename=document.filename, _external=True) }}')">
+                                            <i class="fas fa-copy me-2"></i>Copy Link
+                                        </a></li>
+                                    </ul>
+                                </div>
+                                <a href="{{ url_for('library') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-1"></i>Library
+                                </a>
+                            </div>
+                            <div>
+                                <span class="badge {{ document.get_status_class() }} fs-6">
+                                    {{ document.get_status_display() }}
+                                </span>
+                                {% if document.source_url %}
+                                <span class="badge bg-secondary fs-6 ms-1">
+                                    <i class="fas fa-globe me-1"></i>
+                                    <a href="{{ document.source_url }}" target="_blank" class="text-white text-decoration-none">
+                                        Source
+                                    </a>
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PDF Viewer -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <h6 class="mb-0 me-3">
+                            <i class="fas fa-eye me-1"></i>PDF Viewer
+                        </h6>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-secondary" id="prev-page">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="next-page">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        <span class="ms-3 text-muted" id="page-info">
+                            Page <span id="page-num">1</span> of <span id="page-count">-</span>
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="btn-group btn-group-sm me-3" role="group">
+                            <button type="button" class="btn btn-outline-secondary" id="zoom-out">
+                                <i class="fas fa-search-minus"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="zoom-in">
+                                <i class="fas fa-search-plus"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="zoom-fit">
+                                <i class="fas fa-expand-arrows-alt"></i>
+                            </button>
+                        </div>
+                        <span class="text-muted" id="zoom-level">100%</span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="pdf-container" style="height: 70vh; overflow: auto; background: #f8f9fa;">
+                        <div id="pdf-loading" class="d-flex justify-content-center align-items-center h-100">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary mb-3" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <div>Loading PDF...</div>
+                            </div>
+                        </div>
+                        <canvas id="pdf-canvas" style="display: none; margin: 0 auto; display: block;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Status Update -->
+    <div class="row mt-3">
+        <div class="col-md-6 mx-auto">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-bookmark me-2"></i>Update Reading Status
+                    </h6>
+                    <form method="POST" action="{{ url_for('update_status', doc_id=document.id) }}">
+                        <div class="row g-2">
+                            <div class="col-8">
+                                <select name="status" class="form-control">
+                                    <option value="to_read" {% if document.status.value == 'to_read' %}selected{% endif %}>
+                                        📘 To Read
+                                    </option>
+                                    <option value="in_progress" {% if document.status.value == 'in_progress' %}selected{% endif %}>
+                                        📖 In Progress
+                                    </option>
+                                    <option value="completed" {% if document.status.value == 'completed' %}selected{% endif %}>
+                                        ✅ Completed
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-4">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-save me-1"></i>Update
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// PDF.js configuration
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// PDF viewer variables
+let pdfDoc = null;
+let pageNum = 1;
+let pageRendering = false;
+let pageNumPending = null;
+let scale = 1.0;
+const canvas = document.getElementById('pdf-canvas');
+const ctx = canvas.getContext('2d');
+const container = document.getElementById('pdf-container');
+
+// Load PDF
+const url = '{{ url_for("serve_file", filename=document.filename) }}';
+
+pdfjsLib.getDocument(url).promise.then(function(pdfDoc_) {
+    pdfDoc = pdfDoc_;
+    document.getElementById('page-count').textContent = pdfDoc.numPages;
+    
+    // Hide loading indicator
+    document.getElementById('pdf-loading').style.display = 'none';
+    canvas.style.display = 'block';
+    
+    // Initial page render
+    renderPage(pageNum);
+}).catch(function(error) {
+    console.error('Error loading PDF:', error);
+    document.getElementById('pdf-loading').innerHTML = `
+        <div class="text-center text-danger">
+            <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+            <div>Error loading PDF</div>
+            <small>Please try downloading the file instead.</small>
+        </div>
+    `;
+});
+
+function renderPage(num) {
+    pageRendering = true;
+    
+    pdfDoc.getPage(num).then(function(page) {
+        const viewport = page.getViewport({ scale: scale });
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        
+        // Center the canvas
+        canvas.style.display = 'block';
+        
+        const renderContext = {
+            canvasContext: ctx,
+            viewport: viewport
+        };
+        
+        const renderTask = page.render(renderContext);
+        
+        renderTask.promise.then(function() {
+            pageRendering = false;
+            if (pageNumPending !== null) {
+                renderPage(pageNumPending);
+                pageNumPending = null;
+            }
+        });
+    });
+    
+    document.getElementById('page-num').textContent = num;
+}
+
+function queueRenderPage(num) {
+    if (pageRendering) {
+        pageNumPending = num;
+    } else {
+        renderPage(num);
+    }
+}
+
+function onPrevPage() {
+    if (pageNum <= 1) {
+        return;
+    }
+    pageNum--;
+    queueRenderPage(pageNum);
+}
+
+function onNextPage() {
+    if (pageNum >= pdfDoc.numPages) {
+        return;
+    }
+    pageNum++;
+    queueRenderPage(pageNum);
+}
+
+function onZoomIn() {
+    scale += 0.25;
+    queueRenderPage(pageNum);
+    updateZoomDisplay();
+}
+
+function onZoomOut() {
+    if (scale <= 0.25) {
+        return;
+    }
+    scale -= 0.25;
+    queueRenderPage(pageNum);
+    updateZoomDisplay();
+}
+
+function onZoomFit() {
+    scale = 1.0;
+    queueRenderPage(pageNum);
+    updateZoomDisplay();
+}
+
+function updateZoomDisplay() {
+    document.getElementById('zoom-level').textContent = Math.round(scale * 100) + '%';
+}
+
+// Event listeners
+document.getElementById('prev-page').addEventListener('click', onPrevPage);
+document.getElementById('next-page').addEventListener('click', onNextPage);
+document.getElementById('zoom-in').addEventListener('click', onZoomIn);
+document.getElementById('zoom-out').addEventListener('click', onZoomOut);
+document.getElementById('zoom-fit').addEventListener('click', onZoomFit);
+
+// Keyboard navigation
+document.addEventListener('keydown', function(e) {
+    switch(e.key) {
+        case 'ArrowLeft':
+            onPrevPage();
+            break;
+        case 'ArrowRight':
+            onNextPage();
+            break;
+        case '+':
+        case '=':
+            onZoomIn();
+            break;
+        case '-':
+            onZoomOut();
+            break;
+        case '0':
+            onZoomFit();
+            break;
+    }
+});
+
+// Share URL function
+function copyShareUrl(url) {
+    navigator.clipboard.writeText(url).then(function() {
+        const btn = event.target.closest('a');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check text-success me-2"></i>Copied!';
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+        }, 2000);
+    }).catch(function() {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = url;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        const btn = event.target.closest('a');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check text-success me-2"></i>Copied!';
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+        }, 2000);
+    });
+}
+
+// Social media sharing functions
+function shareToTelegram(url, title) {
+    const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title + ' - via BITS HUB')}`;
+    window.open(telegramUrl, '_blank');
+}
+
+function shareToTwitter(url, title) {
+    const twitterUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title + ' - via BITS HUB')}`;
+    window.open(twitterUrl, '_blank');
+}
+
+function shareToLinkedIn(url, title) {
+    const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+    window.open(linkedinUrl, '_blank');
+}
+</script>
+{% endblock %}
