@@ -19,7 +19,7 @@ class Document(db.Model):
     source_url = db.Column(db.Text)  # For web-to-PDF conversions
     description = db.Column(db.Text)
     view_count = db.Column(db.Integer, default=0)
-    
+    #documents
     def __repr__(self):
         return f'<Document {self.title}>'
     
