@@ -35,7 +35,7 @@ body {
     position: relative;
 }
 
-/* Add a subtle matrix-like pattern overlay */
+
 body::after {
     content: '';
     position: fixed;
