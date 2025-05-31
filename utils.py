@@ -164,7 +164,7 @@ def convert_epub_to_pdf(epub_path, pdf_path):
             return os.path.exists(pdf_path) and os.path.getsize(pdf_path) > 0
             
         except Exception as e:
-            # Clean up temporary file on error
+            
             if os.path.exists(temp_html_path):
                 os.unlink(temp_html_path)
             raise e
