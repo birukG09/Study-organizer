@@ -7,16 +7,16 @@ document.addEventListener('DOMContentLoaded', function() {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
     
-    // File size validation
+    
     setupFileValidation();
     
-    // Auto-dismiss alerts
+    
     setupAutoDismissAlerts();
     
-    // Enhanced form validation
+    
     setupFormValidation();
     
-    // Smooth scrolling for anchor links
+    
     setupSmoothScrolling();
 });
 
